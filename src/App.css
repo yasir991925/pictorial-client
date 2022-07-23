@@ -36,3 +36,44 @@
     transform: rotate(360deg);
   }
 }
+
+
+input{
+	font-size: 1.3rem;
+	border: 2px solid rgb(184, 184, 184);
+	border-radius: 8px;
+	padding: 10px;
+	outline: none;
+}
+
+input:focus{
+	border-color: rgb(138, 35, 248);
+}
+
+.container{
+	display: flex;
+	flex-direction: column;
+}
+
+.mbox{
+	display: inline-block;
+	font-family: monospace;
+	text-align: left;
+	font-size: 1rem;
+	padding: 10px;
+	border: 1px solid #888;
+	margin: 5px;
+	border-radius: 8px;
+}
+
+.mbox > div{
+	font-size: 1rem;
+}
+
+.mbox > div:nth-child(1){
+	color: blue;
+}
+
+.mbox > div:nth-child(3){
+	color:grey;
+}
