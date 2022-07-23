@@ -7,23 +7,28 @@ function App() {
     const [eb, setEb] = useState(null);
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState("");
-    const mesRef = useRef([]);
 
     useEffect(() => {
+        console.log("render");
         const eb = new Eventbus("/eventbus");
         eb.enableReconnect(true);
-        setEb(eb);
 
         if (eb) {
+            console.log("eb");
             eb.onopen = function () {
+                console.log("function");
                 eb.registerHandler("msg", (err, msg) => {
-                    mesRef.current = [...mesRef.current, JSON.parse(msg.body)];
-                    if (!err) setMessages([...mesRef.current]);
+                    console.log("message");
+                    const data = JSON.parse(msg.body);
+                    if (!err) setMessages((messages) => [data, ...messages]);
                 });
             };
         }
 
-        console.log("render");
+        setEb(eb);
+        return () => {
+            eb.close();
+        };
     }, []);
 
     const handleChange = (e) => {
@@ -31,16 +36,19 @@ function App() {
     };
 
     const renderMessages = () => {
-        return messages.sort((a, b) => b.timestamp - a.timestamp).map((m, i) => (
-            <div key={i} className="mbox">
-				<div>{m.server}</div>
-				<div>{m.message}</div>
-				<div>{m.timestamp}</div>
-            </div>
-        ));
+        return messages
+            // .sort((a, b) => b.timestamp - a.timestamp)
+            .map((m, i) => (
+                <div key={i} className="mbox">
+                    <div>{m.server}</div>
+                    <div>{m.message}</div>
+                    <div>{new Date(m.timestamp).toLocaleTimeString()}</div>
+                </div>
+            ));
     };
 
     const sendMessage = () => {
+        console.log(messages);
         if (eb) {
             eb.send("msg-back", text);
             setText("");
