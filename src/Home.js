@@ -1,9 +1,10 @@
 import axios from "axios";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 
 function Home() {
     const [text, setText] = useState("");
+	const navigate = useNavigate();
 
     const createRoom = () => {
         axios
@@ -11,13 +12,26 @@ function Home() {
             .then((res) => {
                 console.log(res);
                 const gameId = res.data;
-				window.location.href = "/game/" + gameId // !TODO this need fix
+                window.location.href = "/game/" + gameId; // !TODO this need fix
             })
             .catch((err) => {
                 console.log(err);
             });
     };
-    const joinRoom = () => {};
+
+    const joinRoom = () => {
+        if (!text) return;
+        console.log("trying to join " + text);
+        axios
+            .get(`/game/data/${text}`)
+            .then((res) => {
+                console.log(res);
+				navigate("/game/"+text, res.data);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    };
 
     return (
         <div>
