@@ -11,12 +11,15 @@ const styles = {
 };
 
 function Room() {
+    const [name, setName] = useState("");
+    const [user, setUser] = useState("");
     const [pageError, setPageError] = useState(null);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [drawState, setDrawState] = useState("");
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState("");
     const [eb, setEb] = useState(null);
+    const [members, setMembers] = useState([]);
     const roomId = useParams().id;
 
     const canvasRef = useRef();
@@ -25,7 +28,7 @@ function Room() {
         axios
             .get(`/game/data/${roomId}`)
             .then((res) => {
-				setMessages(res.data);
+                setMessages(res.data);
                 setDataLoaded(true);
             })
             .catch((err) => {
@@ -35,25 +38,30 @@ function Room() {
     }, [roomId]);
 
     useEffect(() => {
+        if (!user) return;
         console.log("setting up eb");
         const eb = new Eventbus("/eventbus");
         setEb(eb);
         if (eb) {
             eb.enableReconnect(true);
             eb.onopen = function () {
-                eb.registerHandler(roomId, (err, msg) => {
+                eb.registerHandler(roomId, { user: user }, (err, msg) => {
                     console.log("ROOM message");
                     const data = JSON.parse(msg.body);
                     if (!err) setMessages((messages) => [data, ...messages]);
                     console.log(data);
                     // if (!err) setDrawState(data.message);
                 });
+                const metadata = "room.metadata." + roomId;
+                eb.registerHandler(metadata, (err, msg) => {
+                    setMembers((old) => [...msg.body.sort((a, b) => ('' + a.attr).localeCompare(b.attr))]);
+                });
             };
         }
         return () => {
             if (eb) eb.close();
         };
-    }, [roomId]);
+    }, [roomId, user]);
 
     const handleChange = (e) => {
         setText(e.target.value);
@@ -73,7 +81,7 @@ function Room() {
         console.log("state_messages - ", messages);
         if (eb) {
             console.log("Sending message to vertx EB");
-            eb.send("msg.back", { message: text, roomId: roomId });
+            eb.send("msg.back", { message: text, roomId: roomId }, { user: user });
             setText("");
         }
     };
@@ -84,8 +92,23 @@ function Room() {
         console.log(data);
         if (eb) {
             console.log("Sending drawing change to vertx EB");
-            eb.send("msg.back", { message: data, roomId: roomId });
+            eb.send("msg.back", { message: data, roomId: roomId }, { user: user });
         }
+    };
+
+    const renderMembers = () => {
+        return (
+            <div>
+				<b>Online Members</b>
+                {members.map((x) => (
+                    <span 
+					key={x}
+					className="border-2 border-green-600 rounded-md p-2 mr-2">
+                        {x}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     if (pageError) {
@@ -96,8 +119,29 @@ function Room() {
         return <div>Fetching Data...</div>;
     }
 
+    if (!user) {
+        return (
+            <div>
+                <h2>Please enter a name</h2>
+                <input
+                    value={name}
+                    onChange={(x) => setName(x.target.value)}
+                    className="border-2 rounded-md p-2 mr-2 w-3/4 outline-none focus:border-blue-600"
+                />
+                <button
+                    onClick={(e) => setUser(name)}
+                    className="font-bold py-2 px-4 border-blue-600 border-2 rounded-md hover:bg-blue-600 hover:text-white"
+                >
+                    Confirm
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col p-10">
+            <span>Hi - {user}</span>
+            {renderMembers()}
             <h2 className="text-2xl text-center">Room - {roomId}</h2>
             <h1 className="text-3xl text-center font-bold">Scalling web sockets</h1>
             <div className="mb-10" />
